@@ -127,6 +127,14 @@ static void caps_word_enhance_usage(const struct behavior_caps_word_config *conf
     ev->implicit_modifiers |= config->mods;
 }
 
+static bool caps_word_is_break_mod(uint8_t usage_page, uint32_t keycode) {
+    return usage_page == HID_USAGE_KEY &&
+           (keycode == HID_USAGE_KEY_KEYBOARD_LEFTCONTROL ||
+            keycode == HID_USAGE_KEY_KEYBOARD_LEFTSHIFT ||
+            keycode == HID_USAGE_KEY_KEYBOARD_RIGHTCONTROL ||
+            keycode == HID_USAGE_KEY_KEYBOARD_RIGHTSHIFT);
+}
+
 static int caps_word_keycode_state_changed_listener(const zmk_event_t *eh) {
     struct zmk_keycode_state_changed *ev = as_zmk_keycode_state_changed(eh);
     if (ev == NULL || !ev->state) {
@@ -146,7 +154,8 @@ static int caps_word_keycode_state_changed_listener(const zmk_event_t *eh) {
         caps_word_enhance_usage(config, ev);
 
         if (!caps_word_is_alpha(ev->keycode) && !caps_word_is_numeric(ev->keycode) &&
-            !is_mod(ev->usage_page, ev->keycode) &&
+            (!is_mod(ev->usage_page, ev->keycode) ||
+             caps_word_is_break_mod(ev->usage_page, ev->keycode)) &&
             !caps_word_is_caps_includelist(config, ev->usage_page, ev->keycode,
                                            ev->implicit_modifiers)) {
             LOG_DBG("Deactivating caps_word for 0x%02X - 0x%02X", ev->usage_page, ev->keycode);
